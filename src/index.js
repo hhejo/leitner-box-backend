@@ -5,8 +5,6 @@ import db from "./conn.mjs";
 const app = express();
 const port = 3000;
 
-const cardList = [];
-
 app.use(express.json());
 app.use(
   cors({
@@ -15,25 +13,26 @@ app.use(
 );
 
 app.get("/", (req, res) => {
-  // console.log(req);
+  let findResult = null;
   (async () => {
     const cards = db.collection("cards");
-    console.log(cards);
+    findResult = await cards.find({}).toArray();
+    console.log(findResult);
+    res.send({ findResult });
   })();
-  res.send("Hello World!");
 });
 
 app.post("/cards", (req, res) => {
   const { question, answer } = req.body;
-  let ddate = new Date();
-  let [date, time] = ddate.toISOString().split(".")[0].split("T");
-  console.log(date, time);
-  // const card = {
-  //   question,
-  //   answer,
-  //   createdAt: new Date()
-  // }
+  // let ddate = new Date();
+  // let [date, time] = ddate.toISOString().split(".")[0].split("T");
+  // console.log(date, time);
   console.log(question, answer);
+  (async () => {
+    const cards = db.collection("cards");
+    await cards.insertOne({ question, answer });
+  })();
+  res.send({ result: "success" });
 });
 
 app.listen(port, () => {
