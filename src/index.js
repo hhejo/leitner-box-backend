@@ -1,40 +1,38 @@
 import express from "express";
 import cors from "cors";
-import db from "./conn.mjs";
+import db, { ObjectId } from "./conn.mjs";
 
 const app = express();
 const port = 3000;
 
 app.use(express.json());
-app.use(
-  cors({
-    origin: "http://localhost:5173",
-  })
-);
+app.use(cors({ origin: "http://localhost:5173" }));
 
-app.get("/", (req, res) => {
-  let findResult = null;
-  (async () => {
-    const cards = db.collection("cards");
-    findResult = await cards.find({}).toArray();
-    console.log(findResult);
-    res.send({ findResult });
-  })();
+app.get("/", async (_, res) => {
+  const findResult = await db.collection("cards").find().toArray();
+  return res.json(findResult);
 });
 
-app.post("/cards", (req, res) => {
+app.post("/cards", async (req, res) => {
   const { question, answer } = req.body;
-  // let ddate = new Date();
-  // let [date, time] = ddate.toISOString().split(".")[0].split("T");
-  // console.log(date, time);
-  console.log(question, answer);
-  (async () => {
-    const cards = db.collection("cards");
-    await cards.insertOne({ question, answer });
-  })();
-  res.send({ result: "success" });
+  const level = 1;
+  const createdAt = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const testAt = new Date(new Date().setUTCHours(24, 0, 0, 0));
+  const newCard = { question, answer, level, createdAt, testAt };
+  const insertResult = await db.collection("cards").insertOne(newCard);
+  const result = { ...newCard, _id: insertResult.insertedId };
+  return res.json(result);
 });
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+app.delete("/cards/:cardId", async (req, res) => {
+  const cardId = req.params.cardId;
+  await db.collection("cards").findOneAndDelete({ _id: new ObjectId(cardId) });
+  return res.json({ result: "success", _id: cardId });
 });
+
+app.get("/today", async (_, res) => {
+  const findResult = await db.collection("cards").find({}).toArray();
+  return res.json(findResult);
+});
+
+app.listen(port, () => console.log(`Listening on port ${port}`));
